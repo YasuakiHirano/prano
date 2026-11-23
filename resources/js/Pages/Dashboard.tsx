@@ -21,12 +21,26 @@ type WorkspaceListItem = {
     projects: ProjectListItem[];
 };
 
+type DashboardTask = {
+    id: number;
+    title: string;
+    status: 'todo' | 'in_progress' | 'done';
+    priority: 'low' | 'normal' | 'high';
+    due_at: string | null;
+    project: {
+        id: number;
+        name: string;
+        workspace_id: number;
+    };
+};
+
 type DashboardProps = PageProps<{
     status?: string;
+    myTasks: DashboardTask[];
     workspaces: WorkspaceListItem[];
 }>;
 
-export default function Dashboard({ auth, status, workspaces }: DashboardProps) {
+export default function Dashboard({ auth, myTasks, status, workspaces }: DashboardProps) {
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
     });
@@ -62,6 +76,73 @@ export default function Dashboard({ auth, status, workspaces }: DashboardProps) 
                         {status}
                     </div>
                 )}
+
+                <section className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm sm:p-8">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <p className="text-sm font-semibold text-emerald-700">まずはここから</p>
+                            <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950">
+                                自分の未完了タスク
+                            </h2>
+                            <p className="mt-1 text-sm text-slate-500">
+                                担当している作業の進捗を確認できます。
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Link
+                                href={route('tasks.index')}
+                                className="rounded-xl px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+                            >
+                                すべてのタスク
+                            </Link>
+                            <Link
+                                href={route('tasks.index')}
+                                className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
+                            >
+                                タスクを追加
+                            </Link>
+                        </div>
+                    </div>
+
+                    {myTasks.length > 0 ? (
+                        <ul className="mt-5 grid gap-3 md:grid-cols-2">
+                            {myTasks.map((task) => (
+                                <li key={task.id}>
+                                    <Link
+                                        href={route('workspaces.projects.tasks.edit', {
+                                            workspace: task.project.workspace_id,
+                                            project: task.project.id,
+                                            task: task.id,
+                                        })}
+                                        className="flex h-full items-start justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 transition hover:border-emerald-200 hover:bg-emerald-50/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+                                    >
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-semibold text-slate-800">
+                                                {task.title}
+                                            </p>
+                                            <p className="mt-1 text-xs text-slate-500">
+                                                {task.project.name}
+                                                {task.due_at && ` · 期限 ${task.due_at.replaceAll('-', '/')}`}
+                                            </p>
+                                        </div>
+                                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${task.status === 'in_progress' ? 'bg-sky-100 text-sky-800' : 'bg-slate-100 text-slate-700'}`}>
+                                            {task.status === 'in_progress' ? '進行中' : '未着手'}
+                                        </span>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <div className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-5 py-7 text-center">
+                            <p className="text-sm font-medium text-slate-700">
+                                担当中の未完了タスクはありません
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                                タスク一覧からチームの作業を確認したり、新しいタスクを追加できます。
+                            </p>
+                        </div>
+                    )}
+                </section>
 
                 <div className="grid items-start gap-6 lg:grid-cols-[0.85fr_1.15fr]">
                     <section className="rounded-3xl border border-emerald-100/80 bg-gradient-to-br from-white to-emerald-50/80 p-6 shadow-[0_24px_70px_-42px_rgba(15,70,52,0.35)] sm:p-8">
@@ -213,16 +294,28 @@ function WorkspaceProjects({ workspace }: { workspace: WorkspaceListItem }) {
                                     <p className="truncate text-sm font-medium text-slate-800">
                                         {project.name}
                                     </p>
-                                    <Link
-                                        href={route('workspaces.projects.edit', {
-                                            workspace: workspace.id,
-                                            project: project.id,
-                                        })}
-                                        aria-label={`${project.name}を編集`}
-                                        className="shrink-0 rounded-md px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
-                                    >
-                                        編集
-                                    </Link>
+                                    <div className="flex shrink-0 items-center gap-1">
+                                        <Link
+                                            href={route('workspaces.projects.tasks.index', {
+                                                workspace: workspace.id,
+                                                project: project.id,
+                                            })}
+                                            aria-label={`${project.name}のタスクを表示`}
+                                            className="rounded-md px-2 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+                                        >
+                                            タスク
+                                        </Link>
+                                        <Link
+                                            href={route('workspaces.projects.edit', {
+                                                workspace: workspace.id,
+                                                project: project.id,
+                                            })}
+                                            aria-label={`${project.name}を編集`}
+                                            className="rounded-md px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+                                        >
+                                            編集
+                                        </Link>
+                                    </div>
                                 </div>
                                 {project.description && (
                                     <p className="mt-1 break-words text-xs leading-5 text-slate-500">

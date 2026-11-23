@@ -38,6 +38,13 @@ export default function Authenticated({
                                 >
                                     ダッシュボード
                                 </NavLink>
+                                <NavLink
+                                    href={route('tasks.index')}
+                                    active={route().current('tasks.*')}
+                                    className="!border-emerald-600 !text-emerald-700"
+                                >
+                                    タスク
+                                </NavLink>
                             </div>
                         </div>
 
@@ -142,6 +149,13 @@ export default function Authenticated({
                             className="!border-emerald-600 !bg-emerald-50 !text-emerald-800"
                         >
                             ダッシュボード
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('tasks.index')}
+                            active={route().current('tasks.*')}
+                            className="!border-emerald-600 !bg-emerald-50 !text-emerald-800"
+                        >
+                            タスク
                         </ResponsiveNavLink>
                     </div>
 
