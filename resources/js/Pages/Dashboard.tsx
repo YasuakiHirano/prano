@@ -1,212 +1,305 @@
+import InputError from '@/Components/InputError';
+import PrimaryButton from '@/Components/PrimaryButton';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { PageProps } from '@/types';
-import { Head } from '@inertiajs/react';
-import { ReactNode } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
+import { FormEventHandler } from 'react';
 
-export default function Dashboard({ auth }: PageProps) {
+type ProjectListItem = {
+    id: number;
+    name: string;
+    description: string | null;
+    status: string;
+};
+
+type WorkspaceListItem = {
+    id: number;
+    name: string;
+    pivot: {
+        role: string;
+    };
+    projects: ProjectListItem[];
+};
+
+type DashboardProps = PageProps<{
+    status?: string;
+    workspaces: WorkspaceListItem[];
+}>;
+
+export default function Dashboard({ auth, status, workspaces }: DashboardProps) {
+    const { data, setData, post, processing, errors, reset } = useForm({
+        name: '',
+    });
+
+    const submit: FormEventHandler = (event) => {
+        event.preventDefault();
+
+        post(route('workspaces.store'), {
+            onSuccess: () => reset('name'),
+        });
+    };
+
     return (
         <AuthenticatedLayout>
-            <Head title="ダッシュボード" />
+            <Head title="ワークスペース" />
 
             <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-7xl flex-col gap-8 px-6 py-10 sm:px-10 sm:py-14">
                 <section className="flex flex-col gap-3">
                     <span className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-100 bg-white px-3.5 py-2 text-xs font-semibold text-emerald-800 shadow-sm">
                         <span className="size-2 rounded-full bg-emerald-500" />
-                        あなたのチームスペース
+                        少人数チームのタスク管理
                     </span>
                     <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
                         おかえりなさい、{auth.user.name}さん
                     </h1>
                     <p className="max-w-2xl text-sm leading-7 text-slate-500 sm:text-base">
-                        チームのタスクやプロジェクトを、すっきり整理して進めましょう。
+                        ワークスペースとプロジェクトを整理して、チームの仕事をはじめましょう。
                     </p>
                 </section>
 
-                <section className="relative isolate grid flex-1 overflow-hidden rounded-3xl border border-emerald-100/80 bg-gradient-to-br from-white via-white to-emerald-50/80 shadow-[0_24px_70px_-42px_rgba(15,70,52,0.35)] lg:grid-cols-[1fr_1.05fr]">
-                    <div className="relative z-10 flex flex-col justify-center gap-6 p-7 sm:p-10 lg:p-12">
-                        <div className="flex size-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
-                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="size-6">
-                                <path d="M8 5.5h11M8 12h11M8 18.5h11M4.5 5.5h.01M4.5 12h.01M4.5 18.5h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                            </svg>
-                        </div>
-                        <div className="flex flex-col gap-3">
-                            <p className="text-sm font-semibold text-emerald-700">Pranoでチームの仕事を整理</p>
-                            <h2 className="max-w-lg text-2xl font-bold leading-snug tracking-tight text-slate-950 sm:text-3xl">
-                                やることが見えると、
-                                <br className="hidden sm:block" />
-                                チームはもっと進みやすい。
-                            </h2>
-                            <p className="max-w-lg text-sm leading-7 text-slate-600 sm:text-base">
-                                プロジェクトごとにタスクをまとめて、誰が何に取り組んでいるかをチームで共有できます。
-                            </p>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            <FeaturePill>プロジェクトごとに整理</FeaturePill>
-                            <FeaturePill>進捗をひと目で共有</FeaturePill>
-                            <FeaturePill>少人数チームにぴったり</FeaturePill>
-                        </div>
+                {status && (
+                    <div role="status" className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                        {status}
                     </div>
+                )}
 
-                    <div className="relative flex min-h-72 items-center justify-center overflow-hidden px-5 pb-8 pt-4 sm:px-10 sm:pb-10 lg:min-h-[34rem] lg:px-8 lg:py-12">
-                        <div aria-hidden="true" className="absolute inset-8 rounded-full bg-emerald-100/80 blur-3xl" />
-                        <TaskBoardIllustration />
-                    </div>
-                </section>
+                <div className="grid items-start gap-6 lg:grid-cols-[0.85fr_1.15fr]">
+                    <section className="rounded-3xl border border-emerald-100/80 bg-gradient-to-br from-white to-emerald-50/80 p-6 shadow-[0_24px_70px_-42px_rgba(15,70,52,0.35)] sm:p-8">
+                        <div className="mb-6 flex size-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                            <WorkspaceIcon />
+                        </div>
+                        <h2 className="text-xl font-bold tracking-tight text-slate-950">
+                            ワークスペースを作成
+                        </h2>
+                        <p className="mt-2 text-sm leading-6 text-slate-600">
+                            チームの名前をつけて、タスクを整理する場所を作ります。作成したあなたはオーナーになります。
+                        </p>
 
-                <section className="grid gap-4 sm:grid-cols-3">
-                    <InfoCard
-                        number="01"
-                        title="タスクをまとめる"
-                        description="やることをプロジェクトごとに整理。"
-                        icon={<ListIcon />}
-                    />
-                    <InfoCard
-                        number="02"
-                        title="担当を共有する"
-                        description="誰が取り組むかをチームで確認。"
-                        icon={<PeopleIcon />}
-                    />
-                    <InfoCard
-                        number="03"
-                        title="進捗を見渡す"
-                        description="チームの今の状況をひと目で把握。"
-                        icon={<ProgressIcon />}
-                    />
-                </section>
+                        <form onSubmit={submit} className="mt-6 flex flex-col gap-3">
+                            <label htmlFor="workspace-name" className="text-sm font-medium text-slate-700">
+                                ワークスペース名
+                            </label>
+                            <input
+                                id="workspace-name"
+                                name="name"
+                                type="text"
+                                value={data.name}
+                                onChange={(event) => setData('name', event.target.value)}
+                                placeholder="例：デザインチーム"
+                                maxLength={120}
+                                required
+                                autoComplete="organization"
+                                aria-invalid={Boolean(errors.name)}
+                                aria-describedby={errors.name ? 'workspace-name-error' : undefined}
+                                className="w-full rounded-xl border-slate-200 px-4 py-3 text-sm shadow-sm placeholder:text-slate-400 focus:border-emerald-500 focus:ring-emerald-500"
+                            />
+                            <InputError
+                                id="workspace-name-error"
+                                message={errors.name}
+                            />
+                            <PrimaryButton
+                                className="mt-2 justify-center rounded-xl !bg-emerald-600 px-5 py-3 text-sm normal-case tracking-normal hover:!bg-emerald-700 focus:!bg-emerald-700 focus:!ring-emerald-600 active:!bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                disabled={processing}
+                            >
+                                {processing ? '作成中…' : 'ワークスペースを作成'}
+                            </PrimaryButton>
+                        </form>
+                    </section>
+
+                    <section className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm sm:p-8">
+                        <div className="flex items-center justify-between gap-4">
+                            <div>
+                                <h2 className="text-xl font-bold tracking-tight text-slate-950">
+                                    あなたのワークスペース
+                                </h2>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    所属するチームとプロジェクトを管理できます。
+                                </p>
+                            </div>
+                            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-600">
+                                {workspaces.length}
+                            </span>
+                        </div>
+
+                        {workspaces.length > 0 ? (
+                            <ul className="mt-6 flex flex-col gap-4">
+                                {workspaces.map((workspace) => (
+                                    <li
+                                        key={workspace.id}
+                                        className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 sm:p-5"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-lg font-semibold text-emerald-800">
+                                                {workspace.name.slice(0, 1)}
+                                            </span>
+                                            <div className="min-w-0">
+                                                <h3 className="truncate text-sm font-semibold text-slate-800">
+                                                    {workspace.name}
+                                                </h3>
+                                                <p className="mt-1 text-xs text-slate-500">
+                                                    ワークスペース
+                                                </p>
+                                            </div>
+                                            <span className="ms-auto rounded-full bg-white px-3 py-1 text-xs font-medium text-emerald-700 ring-1 ring-emerald-100">
+                                                所属中
+                                            </span>
+                                            {workspace.pivot.role === 'owner' && (
+                                                <Link
+                                                    href={route('workspaces.edit', workspace.id)}
+                                                    aria-label={`${workspace.name}を編集`}
+                                                    className="rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-white hover:text-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+                                                >
+                                                    編集
+                                                </Link>
+                                            )}
+                                        </div>
+                                        <WorkspaceProjects workspace={workspace} />
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <div className="mt-6 flex min-h-56 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-6 text-center">
+                                <span className="flex size-12 items-center justify-center rounded-2xl bg-white text-slate-400 shadow-sm">
+                                    <WorkspaceIcon />
+                                </span>
+                                <h3 className="mt-4 text-sm font-semibold text-slate-700">
+                                    まだワークスペースがありません
+                                </h3>
+                                <p className="mt-1 max-w-xs text-sm leading-6 text-slate-500">
+                                    チームのワークスペースを作成すると、ここに表示されます。
+                                </p>
+                            </div>
+                        )}
+                    </section>
+                </div>
             </div>
         </AuthenticatedLayout>
     );
 }
 
-function FeaturePill({ children }: { children: string }) {
-    return (
-        <span className="rounded-full border border-emerald-100 bg-white/80 px-3 py-1.5 text-xs font-medium text-emerald-800">
-            {children}
-        </span>
-    );
-}
+function WorkspaceProjects({ workspace }: { workspace: WorkspaceListItem }) {
+    const { data, setData, post, processing, errors, reset } = useForm({
+        name: '',
+        description: '',
+    });
 
-function InfoCard({
-    number,
-    title,
-    description,
-    icon,
-}: {
-    number: string;
-    title: string;
-    description: string;
-    icon: ReactNode;
-}) {
+    const submit: FormEventHandler = (event) => {
+        event.preventDefault();
+
+        post(route('workspaces.projects.store', workspace.id), {
+            onSuccess: () => reset(),
+        });
+    };
+
     return (
-        <article className="flex items-start gap-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-900/[0.02]">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-                {icon}
-            </span>
-            <div className="flex min-w-0 flex-col gap-1">
-                <p className="text-[11px] font-semibold tracking-[0.16em] text-emerald-700">{number}</p>
-                <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
-                <p className="text-xs leading-5 text-slate-500">{description}</p>
+        <div className="mt-5 border-t border-slate-200/80 pt-4">
+            <div className="flex items-center justify-between gap-3">
+                <h4 className="text-xs font-semibold text-slate-700">プロジェクト</h4>
+                <span className="text-xs text-slate-400">{workspace.projects.length}件</span>
             </div>
-        </article>
-    );
-}
 
-function TaskBoardIllustration() {
-    return (
-        <div
-            role="img"
-            aria-label="タスクボードのイメージ"
-            className="relative w-full max-w-xl rotate-[1deg] rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_28px_70px_-32px_rgba(15,70,52,0.35)] sm:rounded-3xl sm:p-5"
-        >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <div className="flex items-center gap-3">
-                    <span className="flex size-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-                        <ListIcon />
-                    </span>
-                    <div className="flex flex-col gap-1">
-                        <span className="text-sm font-semibold text-slate-800">プロジェクト</span>
-                        <span className="text-[11px] text-slate-400">チームのタスクを一覧</span>
-                    </div>
+            {workspace.projects.length > 0 ? (
+                <ul className="mt-3 flex flex-col gap-2">
+                    {workspace.projects.map((project) => (
+                        <li
+                            key={project.id}
+                            className="flex items-start gap-3 rounded-xl border border-slate-100 bg-white p-3"
+                        >
+                            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-700">
+                                <ProjectIcon />
+                            </span>
+                            <div className="min-w-0">
+                                <div className="flex items-start justify-between gap-3">
+                                    <p className="truncate text-sm font-medium text-slate-800">
+                                        {project.name}
+                                    </p>
+                                    <Link
+                                        href={route('workspaces.projects.edit', {
+                                            workspace: workspace.id,
+                                            project: project.id,
+                                        })}
+                                        aria-label={`${project.name}を編集`}
+                                        className="shrink-0 rounded-md px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+                                    >
+                                        編集
+                                    </Link>
+                                </div>
+                                {project.description && (
+                                    <p className="mt-1 break-words text-xs leading-5 text-slate-500">
+                                        {project.description}
+                                    </p>
+                                )}
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                <p className="mt-3 rounded-xl bg-white px-3 py-3 text-xs text-slate-500">
+                    まだプロジェクトがありません。下のフォームから追加できます。
+                </p>
+            )}
+
+            <form onSubmit={submit} className="mt-3 grid gap-2.5">
+                <div>
+                    <label htmlFor={`project-name-${workspace.id}`} className="sr-only">
+                        {workspace.name}のプロジェクト名
+                    </label>
+                    <input
+                        id={`project-name-${workspace.id}`}
+                        name="name"
+                        type="text"
+                        value={data.name}
+                        onChange={(event) => setData('name', event.target.value)}
+                        placeholder="プロジェクト名"
+                        maxLength={120}
+                        required
+                        aria-invalid={Boolean(errors.name)}
+                        className="w-full rounded-lg border-slate-200 px-3 py-2.5 text-sm shadow-sm placeholder:text-slate-400 focus:border-emerald-500 focus:ring-emerald-500"
+                    />
+                    <InputError message={errors.name} className="mt-1.5" />
                 </div>
-                <div className="flex -space-x-2" aria-hidden="true">
-                    <span className="flex size-7 items-center justify-center rounded-full border-2 border-white bg-amber-100 text-[10px] font-semibold text-amber-800">A</span>
-                    <span className="flex size-7 items-center justify-center rounded-full border-2 border-white bg-sky-100 text-[10px] font-semibold text-sky-800">M</span>
-                    <span className="flex size-7 items-center justify-center rounded-full border-2 border-white bg-violet-100 text-[10px] font-semibold text-violet-800">Y</span>
+                <div>
+                    <label htmlFor={`project-description-${workspace.id}`} className="sr-only">
+                        {workspace.name}の説明（任意）
+                    </label>
+                    <textarea
+                        id={`project-description-${workspace.id}`}
+                        name="description"
+                        value={data.description}
+                        onChange={(event) => setData('description', event.target.value)}
+                        placeholder="説明（任意）"
+                        maxLength={2000}
+                        rows={2}
+                        aria-invalid={Boolean(errors.description)}
+                        className="w-full resize-y rounded-lg border-slate-200 px-3 py-2.5 text-sm shadow-sm placeholder:text-slate-400 focus:border-emerald-500 focus:ring-emerald-500"
+                    />
+                    <InputError message={errors.description} className="mt-1.5" />
                 </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2.5 pt-4 sm:gap-3.5">
-                <BoardColumn title="これから" tone="slate" tasks={['アイデアをまとめる', '次回の予定を決める']} />
-                <BoardColumn title="進行中" tone="blue" tasks={['デザインを確認する', '資料を仕上げる']} />
-                <BoardColumn title="完了" tone="green" tasks={['キックオフ']} />
-            </div>
-
-            <div className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50/80 px-3 py-2.5 text-[11px] font-medium text-emerald-800 sm:px-4 sm:text-xs">
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-100">
-                    <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className="size-3.5">
-                        <path d="m5 10.25 3.2 3.2L15.5 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                </span>
-                チームの進捗を、みんなで共有
-            </div>
+                <PrimaryButton
+                    className="w-full justify-center rounded-lg !bg-slate-800 px-4 py-2.5 text-xs normal-case tracking-normal hover:!bg-slate-700 focus:!bg-slate-700 focus:!ring-emerald-600 active:!bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:justify-self-end"
+                    disabled={processing}
+                >
+                    {processing ? '作成中…' : 'プロジェクトを追加'}
+                </PrimaryButton>
+            </form>
         </div>
     );
 }
 
-function BoardColumn({
-    title,
-    tone,
-    tasks,
-}: {
-    title: string;
-    tone: 'slate' | 'blue' | 'green';
-    tasks: string[];
-}) {
-    const tones = {
-        slate: 'bg-slate-400',
-        blue: 'bg-blue-500',
-        green: 'bg-emerald-500',
-    };
-
+function WorkspaceIcon() {
     return (
-        <section className="min-w-0 rounded-xl bg-slate-50 p-2 sm:p-3">
-            <div className="mb-2.5 flex items-center gap-1.5">
-                <span className={`size-1.5 shrink-0 rounded-full ${tones[tone]}`} />
-                <h3 className="truncate text-[10px] font-semibold text-slate-600 sm:text-[11px]">{title}</h3>
-            </div>
-            <div className="flex flex-col gap-2">
-                {tasks.map((task) => (
-                    <div key={task} className="rounded-lg border border-slate-100 bg-white p-2 shadow-sm sm:p-2.5">
-                        <p className="min-h-8 text-[9px] font-medium leading-4 text-slate-700 sm:text-[10px] sm:leading-5">{task}</p>
-                        <span className="mt-1.5 flex size-5 items-center justify-center rounded-full bg-slate-100 text-[8px] font-semibold text-slate-500">{task === 'キックオフ' ? 'A' : 'M'}</span>
-                    </div>
-                ))}
-            </div>
-        </section>
-    );
-}
-
-function ListIcon() {
-    return (
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="size-5">
-            <path d="M8 5.5h11M8 12h11M8 18.5h11M4.5 5.5h.01M4.5 12h.01M4.5 18.5h.01" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="size-6">
+            <path d="M4 7.75A1.75 1.75 0 0 1 5.75 6h4.1c.46 0 .9.18 1.24.51l1.32 1.3c.33.33.77.51 1.23.51h4.61A1.75 1.75 0 0 1 20 10.07v7.18A1.75 1.75 0 0 1 18.25 19h-12.5A1.75 1.75 0 0 1 4 17.25V7.75Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+            <path d="M4.5 10h15" stroke="currentColor" strokeWidth="1.7" />
         </svg>
     );
 }
 
-function PeopleIcon() {
+function ProjectIcon() {
     return (
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="size-5">
-            <path d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20M10 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM16 4.2a3.5 3.5 0 0 1 0 6.8M20 20v-1.5a3.5 3.5 0 0 0-2.5-3.35" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-    );
-}
-
-function ProgressIcon() {
-    return (
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="size-5">
-            <path d="M4 19V5m0 14h16M8 15l3-4 3 2 5-6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M16 7h3v3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="size-4">
+            <path d="M5 5.75A1.75 1.75 0 0 1 6.75 4h10.5A1.75 1.75 0 0 1 19 5.75v12.5A1.75 1.75 0 0 1 17.25 20H6.75A1.75 1.75 0 0 1 5 18.25V5.75Z" stroke="currentColor" strokeWidth="1.6" />
+            <path d="M8.5 8h7M8.5 12h7M8.5 16h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
         </svg>
     );
 }
