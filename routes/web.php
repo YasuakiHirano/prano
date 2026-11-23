@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\WorkspaceController;
+use App\Http\Controllers\WorkspaceInvitationController;
 use App\Models\Task;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Application;
@@ -65,6 +66,18 @@ Route::get('/workspaces/{workspace}/edit', [WorkspaceController::class, 'edit'])
 Route::put('/workspaces/{workspace}', [WorkspaceController::class, 'update'])
     ->middleware(['auth', 'verified'])
     ->name('workspaces.update');
+
+Route::post('/workspaces/{workspace}/invitations', [WorkspaceInvitationController::class, 'store'])
+    ->middleware(['auth', 'verified'])
+    ->name('workspaces.invitations.store');
+
+Route::get('/workspace-invitations/{token}', [WorkspaceInvitationController::class, 'show'])
+    ->middleware(['auth', 'verified'])
+    ->name('workspace-invitations.show');
+
+Route::post('/workspace-invitations/{token}', [WorkspaceInvitationController::class, 'accept'])
+    ->middleware(['auth', 'verified'])
+    ->name('workspace-invitations.accept');
 
 Route::post('/workspaces/{workspace}/projects', [ProjectController::class, 'store'])
     ->middleware(['auth', 'verified'])

@@ -19,6 +19,17 @@ class WorkspaceController extends Controller
 
         return Inertia::render('Workspaces/Edit', [
             'workspace' => $workspace->only(['id', 'name']),
+            'members' => $workspace->members()->orderBy('name')->get(['users.id', 'users.name', 'users.email'])
+                ->map(fn ($member): array => [
+                    'id' => $member->id,
+                    'name' => $member->name,
+                    'email' => $member->email,
+                    'role' => $member->pivot->role,
+                ]),
+            'invitations' => $workspace->invitations()
+                ->where('expires_at', '>', now())
+                ->orderBy('created_at')
+                ->get(['id', 'email', 'expires_at']),
         ]);
     }
 

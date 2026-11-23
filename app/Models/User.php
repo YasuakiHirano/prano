@@ -42,6 +42,12 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    /** @return HasMany<WorkspaceInvitation, $this> */
+    public function workspaceInvitations(): HasMany
+    {
+        return $this->hasMany(WorkspaceInvitation::class, 'invited_by');
+    }
+
     /**
      * @return HasMany<Task, $this>
      */

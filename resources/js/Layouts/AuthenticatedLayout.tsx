@@ -3,15 +3,26 @@ import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import { Link, usePage } from '@inertiajs/react';
 import { PropsWithChildren, ReactNode, useState } from 'react';
+import { PageProps } from '@/types';
 
 export default function Authenticated({
     header,
     children,
 }: PropsWithChildren<{ header?: ReactNode }>) {
-    const user = usePage().props.auth.user;
+    const { auth, workspaces } = usePage<PageProps>().props;
+    const user = auth.user;
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
+    const [expandedWorkspaces, setExpandedWorkspaces] = useState<number[]>([]);
+
+    const toggleWorkspace = (workspaceId: number) => {
+        setExpandedWorkspaces((expanded) =>
+            expanded.includes(workspaceId)
+                ? expanded.filter((id) => id !== workspaceId)
+                : [...expanded, workspaceId],
+        );
+    };
 
     return (
         <div className="min-h-screen bg-[#f8faf9] text-slate-900">
@@ -38,6 +49,58 @@ export default function Authenticated({
                                 >
                                     ダッシュボード
                                 </NavLink>
+                                <div className="relative flex items-center">
+                                    <span className="px-1 text-sm font-medium text-slate-500">
+                                        ワークスペース
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleWorkspace(-1)}
+                                        aria-expanded={expandedWorkspaces.includes(-1)}
+                                        aria-label="ワークスペース一覧を開く"
+                                        className="ml-1 rounded p-1 text-slate-500 hover:bg-slate-100"
+                                    >
+                                        <ChevronIcon expanded={expandedWorkspaces.includes(-1)} />
+                                    </button>
+                                    {expandedWorkspaces.includes(-1) && (
+                                        <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+                                            {workspaces.length ? workspaces.map((workspace) => (
+                                                <div key={workspace.id}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleWorkspace(workspace.id)}
+                                                        aria-expanded={expandedWorkspaces.includes(workspace.id)}
+                                                        className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                                    >
+                                                        {workspace.name}
+                                                        <ChevronIcon expanded={expandedWorkspaces.includes(workspace.id)} />
+                                                    </button>
+                                                    {expandedWorkspaces.includes(workspace.id) && (
+                                                        <div className="mb-1 ml-3 border-l border-slate-200 pl-2">
+                                                            {workspace.projects.map((project) => (
+                                                                <Link
+                                                                    key={project.id}
+                                                                    href={route('workspaces.projects.tasks.index', [workspace.id, project.id])}
+                                                                    className="block rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-emerald-50 hover:text-emerald-800"
+                                                                >
+                                                                    {project.name}
+                                                                </Link>
+                                                            ))}
+                                                            {workspace.projects.length === 0 && (
+                                                                <p className="px-3 py-2 text-xs text-slate-400">プロジェクトはありません</p>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )) : (
+                                                <p className="px-3 py-2 text-sm text-slate-500">ワークスペースはありません</p>
+                                            )}
+                                            <Link href={route('dashboard')} className="mt-1 block rounded-lg px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50">
+                                                ワークスペースを管理
+                                            </Link>
+                                        </div>
+                                    )}
+                                </div>
                                 <NavLink
                                     href={route('tasks.index')}
                                     active={route().current('tasks.*')}
@@ -150,6 +213,46 @@ export default function Authenticated({
                         >
                             ダッシュボード
                         </ResponsiveNavLink>
+                        <div className="px-4 py-3">
+                            <button
+                                type="button"
+                                onClick={() => toggleWorkspace(-1)}
+                                aria-expanded={expandedWorkspaces.includes(-1)}
+                                className="flex w-full items-center justify-between text-left text-sm font-semibold text-slate-600"
+                            >
+                                ワークスペース
+                                <ChevronIcon expanded={expandedWorkspaces.includes(-1)} />
+                            </button>
+                            {expandedWorkspaces.includes(-1) && (
+                                <div className="mt-2 space-y-1">
+                                    {workspaces.map((workspace) => (
+                                        <div key={workspace.id}>
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleWorkspace(workspace.id)}
+                                                aria-expanded={expandedWorkspaces.includes(workspace.id)}
+                                                className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                            >
+                                                {workspace.name}
+                                                <ChevronIcon expanded={expandedWorkspaces.includes(workspace.id)} />
+                                            </button>
+                                            {expandedWorkspaces.includes(workspace.id) && workspace.projects.map((project) => (
+                                                <Link
+                                                    key={project.id}
+                                                    href={route('workspaces.projects.tasks.index', [workspace.id, project.id])}
+                                                    className="block rounded-lg py-2 pl-6 text-sm text-slate-600 hover:bg-emerald-50 hover:text-emerald-800"
+                                                >
+                                                    {project.name}
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    ))}
+                                    <Link href={route('dashboard')} className="block px-2 py-2 text-sm font-medium text-emerald-700">
+                                        ワークスペースを管理
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
                         <ResponsiveNavLink
                             href={route('tasks.index')}
                             active={route().current('tasks.*')}
@@ -196,5 +299,18 @@ export default function Authenticated({
 
             <main>{children}</main>
         </div>
+    );
+}
+
+function ChevronIcon({ expanded }: { expanded: boolean }) {
+    return (
+        <svg
+            aria-hidden="true"
+            className={`size-4 transition-transform ${expanded ? 'rotate-180' : ''}`}
+            viewBox="0 0 20 20"
+            fill="currentColor"
+        >
+            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+        </svg>
     );
 }

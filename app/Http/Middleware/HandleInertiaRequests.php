@@ -34,6 +34,16 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'flash' => [
+                'status' => $request->session()->get('status'),
+            ],
+            'workspaces' => fn (): array => $request->user()
+                ? $request->user()->workspaces()
+                    ->with('projects:id,workspace_id,name,status')
+                    ->orderBy('workspaces.name')
+                    ->get(['workspaces.id', 'workspaces.name'])
+                    ->toArray()
+                : [],
         ];
     }
 }
